@@ -5,8 +5,9 @@ Baselines for comparison are shortest job first, min max, weighted min max based
 '''
 
 import sys
+import math
 
-MAX_CONTAINERS = 10
+MAX_CONTAINERS = 5
 CONTAINER_SIZE = 1
 
 
@@ -21,7 +22,7 @@ class job:
     self.schedule_time = schedule_time
     self.container_per_partition = float(job_variables[2])
     self.total_partitions = int(job_variables[1])
-    self.partitions_per_container = CONTAINER_SIZE / self.container_per_partition
+    self.partitions_per_container = math.floor(CONTAINER_SIZE / self.container_per_partition)
     self.job_container_quota = float(job_variables[3])
     self.estimated_time_per_partition = int(job_variables[4])
     self.job_weight = 0
@@ -49,6 +50,8 @@ class scheduler:
 
     if algo == 1:
       return self.schedule_max_min(time)
+    if algo == 2:
+      return self.schedule_weighted_max_min(time)
 
     # Shorted job first
     if algo == 0:
@@ -101,6 +104,67 @@ class scheduler:
 
     return False
 
+  def normalize_allocation(self):
+    sum_all = 0
+    for i in self.ready_queue:
+      sum_all += i.job_container_quota
+    print sum_all
+
+    for j in self.ready_queue:
+      j.job_weight = (j.job_container_quota* 1.0/sum_all)
+      print j.jobID, " " ,j.job_weight
+
+
+  def schedule_weighted_max_min(self, time=0):
+    # Containers allotted
+    ready_queue_new = []
+
+    self.normalize_allocation()
+
+
+    min_next_time = sys.maxint
+    print 'before ', time
+
+    for job in self.ready_queue:
+      print "jobId, partitions_left, partitions_per_container"
+      print job.jobID, job.total_partitions, job.partitions_per_container
+
+    queue_length = len(self.ready_queue)
+
+    while queue_length > 0 and self.containers_at_time[time] > 0:
+
+      # Containers allotted
+
+      job = self.ready_queue.pop(0)
+
+      print math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time])
+      job.containers_allotted += min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
+      job.total_partitions -= job.containers_allotted * job.partitions_per_container
+      print "Allotting 1 container to job %s: new size: %s" % (
+        job.jobID, job.containers_allotted)
+
+      estimated_time = job.estimated_time_per_partition
+      min_next_time = min(time + estimated_time, min_next_time)
+
+      for i in range(time + 1, time + estimated_time):
+        self.containers_at_time[i] -= min(job.total_partitions/job.partitions_per_container, math.floor(job.job_weight * self.containers_at_time[time]))
+        if self.containers_at_time[i] < 0:
+          print 'ERROR: resource', self.containers_at_time[i], ' at time', i, 'below 0'
+
+      if job.total_partitions > 0:
+        self.ready_queue.append(job)
+      queue_length -= 1
+    print 'after ', time
+
+    for job in self.ready_queue:
+      print job.jobID, job.total_partitions
+
+    if min_next_time < sys.maxint:
+      self.next_time = min_next_time
+      return True
+
+    return False
+
   def schedule_max_min(self, time=0):
 
     # Containers allotted
@@ -125,10 +189,10 @@ class scheduler:
 
       if job.total_partitions == 0:
         print "No more partitions left to schedule for job %s" % job.jobID
-        sorted_queue.pop(0)
+        self.ready_queue.pop(0)
         continue
 
-      job.total_partitions -= job.partitions_per_container
+      job.total_partitions = max(0, job.total_partitions - job.partitions_per_container)
       job.containers_allotted += 1
       print "Allotting 1 container to job %s: new size: %s" % (
         job.jobID, job.containers_allotted)
@@ -167,7 +231,7 @@ class scheduler:
 
       # <time><tab><list of jobs to be scheduled at time time>
       for i in range(len(alljobs)):
-        parts = alljobs[i].strip().split('\t')
+        parts = alljobs[i].strip().split('-')
 
         time = int(parts[0])
 
@@ -195,6 +259,15 @@ class scheduler:
     f.close()
 
 
-sch = scheduler('test.txt')
-sch.run(algo_id=0)
+sch1 = scheduler('test.txt')
+sch2 = scheduler('test.txt')
+sch3 = scheduler('test.txt')
+
+# sch1.run(algo_id=0)
+# print "==================="
+# sch2.run(algo_id=1)
+# print "==================="
+sch3.run(algo_id=2)
+print "==================="
 # sch.run(algo_id=1)
+
