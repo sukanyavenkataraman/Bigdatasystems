@@ -206,6 +206,12 @@ class scheduler:
 
       job.total_partitions = max(0, job.total_partitions - job.partitions_per_container)
       job.containers_allotted += 1
+
+      jobId = job.jobID
+
+      self.all_jobs[jobId].containers_allotted += 1
+      self.all_jobs[jobId].end_time = time + job.estimated_time_per_partition
+
       print "Allotting 1 container to job %s: new size: %s" % (
         job.jobID, job.containers_allotted)
       self.containers_at_time[time] -= 1
@@ -296,12 +302,12 @@ class scheduler:
 
     f.close()
 
-
 sch1 = scheduler('test.txt')
 sch2 = scheduler('test.txt')
 sch3 = scheduler('test.txt')
+sch1 = scheduler('simple_load.txt')
 
-sch1.run(algo_id=0)
+sch1.run(algo_id=1)
 sch1.printJCT()
 sch1.printCE()
 
