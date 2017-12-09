@@ -1,4 +1,4 @@
-ii'''
+'''
 F3: A scheduler for F2 based on weighted minmax
 Weights are based on a function of user resource quota and % containers allotted
 Baselines for comparison are shortest job first, min max, weighted min max based on other weights
@@ -156,7 +156,7 @@ class scheduler:
 
       print math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time])
       job.containers_allotted += min(math.ceil(job.total_partitions / job.partitions_per_container),math.floor(job.job_weight * self.containers_at_time[time]))
-      self.containers_allotted += min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
+      self.all_jobs[job.jobID].containers_allocated += min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
       job.total_partitions -= job.containers_allotted * job.partitions_per_container
       print "Allotting 1 container to job %s: new size: %s" % (
         job.jobID, job.containers_allotted)
