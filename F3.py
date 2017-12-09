@@ -6,6 +6,7 @@ Baselines for comparison are shortest job first, min max, weighted min max based
 
 import sys
 import math
+import matplotlib.pyplot as plt
 
 MAX_CONTAINERS = 5
 CONTAINER_SIZE = 1
@@ -29,6 +30,15 @@ class job:
     self.parallelism_at_time = []
     self.containers_allotted = 0
 
+class jobInfo:
+  def __init__(self,
+               jobID,
+               startTime):
+    self.jobID = jobID
+    self.containers_allotted = 0
+    self.start_time = startTime
+    self.end_time = startTime
+
 
 class scheduler:
   def __init__(self,
@@ -43,6 +53,8 @@ class scheduler:
     self.containers_at_time = [MAX_CONTAINERS] * 1000
     self.decisions = []
     self.next_time = 0
+    self.all_jobs = {}
+
 
   def schedule_decision(self,
       algo=0,
@@ -53,7 +65,7 @@ class scheduler:
     if algo == 2:
       return self.schedule_weighted_max_min(time)
 
-    # Shorted job first
+    # Shortest job first
     if algo == 0:
       sorted_queue = sorted(self.ready_queue, key=lambda
           x: x.estimated_time_per_partition * x.total_partitions)
@@ -73,6 +85,9 @@ class scheduler:
         sorted_queue[index].total_partitions -= sorted_queue[
           index].partitions_per_container
         sorted_queue[index].containers_allotted += 1
+        self.all_jobs[sorted_queue[index].jobID].containers_allotted += 1
+        self.all_jobs[sorted_queue[index].jobID].end_time = time + sorted_queue[index].estimated_time_per_partition
+
         self.containers_at_time[time] -= 1
 
         if time + sorted_queue[
@@ -168,10 +183,7 @@ class scheduler:
   def schedule_max_min(self, time=0):
 
     # Containers allotted
-    sorted_queue = sorted(self.ready_queue,
-                          key=lambda x: x.containers_allotted)
 
-    ready_queue_new = []
     min_next_time = sys.maxint
     print 'before ', time
 
@@ -224,6 +236,29 @@ class scheduler:
 
     return False
 
+  def printJCT(self):
+    avg = 0
+    oct = 0
+
+    for key, value in self.all_jobs.iteritems():
+      time = value.end_time - value.start_time
+      print key, time
+      avg += time
+      oct = max(oct, time)
+
+    print 'Average job completion time : ', 1.0*avg/len(self.all_jobs)
+    print 'Overall completion time : ', oct
+
+  def printCE(self):
+    usage = []
+    for i in range(len(self.containers_at_time)):
+        usage.append(100.0*(MAX_CONTAINERS-self.containers_at_time[i])/MAX_CONTAINERS)
+
+    plt.plot(usage)
+    plt.ylabel('Cluster usage percentage')
+    plt.axis([0, 10, 0, 110])
+    plt.show()
+
   def run(self, algo_id=0):
 
     with open(self.filename, 'r') as f:
@@ -243,6 +278,9 @@ class scheduler:
         jobs_at_time = parts[1].strip().split(';')
         for eachjob in jobs_at_time:
           print eachjob
+          if eachjob[0] not in self.all_jobs:
+            self.all_jobs[eachjob[0]] = jobInfo(eachjob[0], time)
+
           self.ready_queue.append(job(eachjob, time))
 
         if self.next_time == time:
@@ -263,11 +301,14 @@ sch1 = scheduler('test.txt')
 sch2 = scheduler('test.txt')
 sch3 = scheduler('test.txt')
 
-# sch1.run(algo_id=0)
+sch1.run(algo_id=0)
+sch1.printJCT()
+sch1.printCE()
+
 # print "==================="
 # sch2.run(algo_id=1)
 # print "==================="
-sch3.run(algo_id=2)
+# sch3.run(algo_id=2)
 print "==================="
 # sch.run(algo_id=1)
 
