@@ -33,11 +33,15 @@ class job:
 class jobInfo:
   def __init__(self,
                jobID,
-               startTime):
+               startTime,
+               containersRequired,
+               jobQuota):
     self.jobID = jobID
     self.containers_allotted = 0
+    self.containers_required = containersRequired
     self.start_time = startTime
     self.end_time = startTime
+    self.job_quota = jobQuota
 
 
 class scheduler:
@@ -122,20 +126,30 @@ class scheduler:
   def normalize_allocation(self):
     sum_all = 0
     for i in self.ready_queue:
-      sum_all += i.job_container_quota
+      sum_all += self.all_jobs[i.jobID].job_quota
     print sum_all
 
     for j in self.ready_queue:
-      j.job_weight = (j.job_container_quota* 1.0/sum_all)
+      j.job_weight = (j.job_container_quota * 1.0/sum_all)
       print j.jobID, " " ,j.job_weight
 
+
+  def normalize_allocation_ours(self):
+      sum_all = 0
+      for i in self.ready_queue:
+          sum_all += i.job_container_quota + 1.0*self.all_jobs[i.jobID].containers_allotted/self.all_jobs[i.jobID].containers_required
+      print sum_all
+
+      for j in self.ready_queue:
+          j.job_weight = (j.job_container_quota + 1.0*self.all_jobs[j.jobID].containers_allotted/self.all_jobs[i.jobID].containers_required / sum_all)
+          print j.jobID, " ", j.job_weight
 
   def schedule_weighted_max_min(self, time=0):
     # Containers allotted
     ready_queue_new = []
 
-    self.normalize_allocation()
-
+    #self.normalize_allocation()
+    self.normalize_allocation_ours()
 
     min_next_time = sys.maxint
     print 'before ', time
@@ -152,17 +166,22 @@ class scheduler:
 
       job = self.ready_queue.pop(0)
 
-      print math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time])
-      job.containers_allotted += min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
+      print job.jobID, job.containers_allotted, min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
+      allocation = min(math.ceil(job.total_partitions/job.partitions_per_container), math.floor(job.job_weight * self.containers_at_time[time]))
+      job.containers_allotted += allocation
+
+      self.all_jobs[job.jobID].containers_allotted += allocation
       job.total_partitions -= job.containers_allotted * job.partitions_per_container
-      print "Allotting 1 container to job %s: new size: %s" % (
+
+      print "Allotting containers to job %s: new size: %s" % (
         job.jobID, job.containers_allotted)
 
       estimated_time = job.estimated_time_per_partition
+      self.all_jobs[job.jobID].end_time = time + estimated_time
       min_next_time = min(time + estimated_time, min_next_time)
 
       for i in range(time + 1, time + estimated_time):
-        self.containers_at_time[i] -= min(job.total_partitions/job.partitions_per_container, math.floor(job.job_weight * self.containers_at_time[time]))
+        self.containers_at_time[i] -= allocation
         if self.containers_at_time[i] < 0:
           print 'ERROR: resource', self.containers_at_time[i], ' at time', i, 'below 0'
 
@@ -195,7 +214,7 @@ class scheduler:
 
       # Containers allotted
       sorted_queue = sorted(self.ready_queue,
-                            key=lambda x: x.containers_allotted)
+                            key=lambda x: self.all_jobs[x.jobID].containers_allotted)
 
       job = sorted_queue[0]
 
@@ -284,8 +303,12 @@ class scheduler:
         jobs_at_time = parts[1].strip().split(';')
         for eachjob in jobs_at_time:
           print eachjob
-          if eachjob[0] not in self.all_jobs:
-            self.all_jobs[eachjob[0]] = jobInfo(eachjob[0], time)
+          eachjob_parts = eachjob.split(',')
+          if eachjob_parts[0] not in self.all_jobs:
+            self.all_jobs[eachjob_parts[0]] = jobInfo(eachjob_parts[0], time, math.ceil(float(eachjob_parts[1])*float(eachjob_parts[2])), float(eachjob_parts[3]))
+
+          else:
+            self.all_jobs[eachjob_parts[0]].containers_required += math.ceil(float(eachjob_parts[1])*float(eachjob_parts[2]))
 
           self.ready_queue.append(job(eachjob, time))
 
@@ -307,7 +330,7 @@ sch2 = scheduler('test.txt')
 sch3 = scheduler('test.txt')
 sch1 = scheduler('simple_load.txt')
 
-sch1.run(algo_id=1)
+sch1.run(algo_id=2)
 sch1.printJCT()
 sch1.printCE()
 
