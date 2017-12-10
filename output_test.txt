@@ -1,0 +1,29 @@
+ Job  A  completed in  32  seconds.
+ Job  C  completed in  4  seconds.
+ Job  B  completed in  18  seconds.
+ Job  D  completed in  20  seconds.
+Average job completion time :  18.5
+Overall completion time :  32
+===================
+No more partitions left to schedule for job A
+ Job  A  completed in  23  seconds.
+ Job  C  completed in  7  seconds.
+ Job  B  completed in  21  seconds.
+ Job  D  completed in  14  seconds.
+Average job completion time :  16.25
+Overall completion time :  23
+===================
+ Job  A  completed in  28  seconds.
+ Job  C  completed in  7  seconds.
+ Job  B  completed in  18  seconds.
+ Job  D  completed in  25  seconds.
+Average job completion time :  19.5
+Overall completion time :  28
+===================
+ Job  A  completed in  31  seconds.
+ Job  C  completed in  7  seconds.
+ Job  B  completed in  18  seconds.
+ Job  D  completed in  24  seconds.
+Average job completion time :  20.0
+Overall completion time :  31
+===================
