@@ -65,11 +65,11 @@ class scheduler:
       time=0):
 
     if algo == 1:
-      self.schedule_max_min(time)
+      return self.schedule_max_min(time)
     if algo == 2:
-      self.schedule_weighted_max_min(time)
+      return self.schedule_weighted_max_min(time)
     if algo == 3:
-      self.schedule_weighted_max_min(time, algo=3)
+      return self.schedule_weighted_max_min(time, algo=3)
 
     # Shortest job first
     #if algo == 0:
@@ -330,10 +330,10 @@ class scheduler:
 
     f.close()
 
-sch1 = scheduler('foo.txt')
-sch2 = scheduler('foo.txt')
-sch3 = scheduler('foo.txt')
-sch4 = scheduler('foo.txt')
+sch1 = scheduler('load.txt')
+sch2 = scheduler('load.txt')
+sch3 = scheduler('load.txt')
+sch4 = scheduler('load.txt')
 
 sch1.run(algo_id=0)
 sch1.printJCT()

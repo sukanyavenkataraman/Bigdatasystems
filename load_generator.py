@@ -1,5 +1,6 @@
 import sys
 import random
+from datetime import datetime
 
 
 # Usage: python load_generator.py output_file_path max_jobs max_ready_jobs_at_t max_execution_time_per_partition max_partitions_per_vertex max_ready_time max_time_delta_between_lines
@@ -9,12 +10,13 @@ import random
 # Sample Usage: python load_generator.py foo.txt 10 5 5 5 100 5
 
 def main(args):
+  random.seed(datetime.now())
   filename = args[1]
   max_jobs = int(args[2])
   max_ready_jobs_at_t = int(args[3])
   max_execution_time_per_partition = int(args[4])
   max_partitions_per_vertex = int(args[5])
-  max_ready_time = int(args[6])
+  max_ready_time = int(args[6]) - 1
   max_time_delta_between_lines = int(args[7])
 
   file = open(filename, 'w')
@@ -27,10 +29,10 @@ def main(args):
   for i in range(0, job_count):
     quota_per_job[i] = 1.0 * random.randint(1, 10) / 10.0
 
-  curr_time = 1
+  curr_time = 0
   #
 
-  while curr_time <= max_ready_time - max_time_delta_between_lines:
+  while True:
     print "current time: ", curr_time
     line = generate_line(curr_time, max_ready_jobs_at_t,
                          max_partitions_per_vertex,
@@ -38,7 +40,10 @@ def main(args):
                          quota_per_job)
     file.write(line)
 
-    curr_time = curr_time + random.randint(1, max_time_delta_between_lines)
+    delta = random.randint(1, max_time_delta_between_lines)
+    if curr_time + delta > max_ready_time:
+      break
+    curr_time = curr_time + delta
     file.write("\n")
 
   file.close()
