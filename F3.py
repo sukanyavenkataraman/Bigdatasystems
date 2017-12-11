@@ -209,7 +209,7 @@ class scheduler:
     # Containers allotted
 
     min_next_time = sys.maxint
-    #print 'before ', time, ' containers available ', self.containers_at_time[time]
+    #print 'scheduler begin time', time, ' containers available ', self.containers_at_time[time]
 
     #for job in self.ready_queue:
       #print "jobId, partitions_left, partitions_per_container"
