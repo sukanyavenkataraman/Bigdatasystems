@@ -64,12 +64,13 @@ class scheduler:
       algo=0,
       time=0):
 
+    flag = False
     if algo == 1:
-      self.schedule_max_min(time)
+        flag = self.schedule_max_min(time)
     if algo == 2:
-      self.schedule_weighted_max_min(time)
+        flag = self.schedule_weighted_max_min(time)
     if algo == 3:
-      self.schedule_weighted_max_min(time, algo=3)
+        flag = self.schedule_weighted_max_min(time, algo=3)
 
     # Shortest job first
     # if algo == 0:
@@ -104,6 +105,7 @@ class scheduler:
 
         for i in range(time + 1,
                        time + sorted_queue[index].estimated_time_per_partition):
+          #print i, self.containers_at_time[i]
           self.containers_at_time[i] -= 1
           if self.containers_at_time[i] < 0:
             print 'ERROR: resource', self.containers_at_time[
@@ -124,7 +126,7 @@ class scheduler:
       self.next_time = min_next_time
       return True
 
-    return False
+    return flag or False
 
   def normalize_allocation(self):
     sum_all = 0
@@ -135,16 +137,15 @@ class scheduler:
       j.job_weight = (j.job_container_quota * 1.0 / sum_all)
 
   def normalize_allocation_ours(self):
-    sum_all = 0
-    for i in self.ready_queue:
-      sum_all += i.job_container_quota + 1.0 * self.all_jobs[
-        i.jobID].containers_allotted / self.all_jobs[
-                                           i.jobID].containers_required
+      sum_all = 0
+      for i in self.ready_queue:
+          job = self.all_jobs[i.jobID]
+          sum_all += i.job_container_quota + 1.0*job.containers_allotted/job.containers_required
 
-    for j in self.ready_queue:
-      j.job_weight = ((j.job_container_quota + 1.0 * self.all_jobs[
-        j.jobID].containers_allotted / self.all_jobs[
-                         i.jobID].containers_required) / sum_all)
+      for j in self.ready_queue:
+          job = self.all_jobs[i.jobID]
+          j.job_weight = ((j.job_container_quota + (1.0*job.containers_allotted/job.containers_required)) / sum_all)
+
 
   def schedule_weighted_max_min(self,
       time=0,
@@ -190,6 +191,7 @@ class scheduler:
       min_next_time = min(time + estimated_time, min_next_time)
 
       for i in range(time + 1, time + estimated_time):
+        #print job.jobID, i, self.containers_at_time[i], allocation
         self.containers_at_time[i] -= allocation
         if self.containers_at_time[i] < 0:
           print 'ERROR: resource', self.containers_at_time[
@@ -283,7 +285,7 @@ class scheduler:
       time = value.end_time - value.start_time
       print ' Job ', key, ' completed in ', time, ' seconds.'
       avg += time
-      oct = max(oct, time)
+      oct = max(oct, value.end_time)
 
     print 'Average job completion time : ', 1.0 * avg / len(self.all_jobs)
     print 'Overall completion time : ', oct
@@ -314,8 +316,9 @@ class scheduler:
 
         while self.next_time < time:
           if self.schedule_decision(algo_id, self.next_time) == False:
-            break
-        # print 'Out of potential infinite loop 1'
+              #print 'No resources could be added ', time, self.next_time
+              break
+        #print 'Out of potential infinite loop 1'
 
         jobs_at_time = parts[1].strip().split(';')
         for eachjob in jobs_at_time:
@@ -334,7 +337,7 @@ class scheduler:
 
           self.ready_queue.append(job(eachjob, time))
 
-        if self.next_time == time:
+        #if self.next_time == time:
           self.schedule_decision(algo_id, time)
 
       if self.ready_queue == []:
