@@ -6,6 +6,7 @@ import random
 # max_ready_time refers to the time entry of the last line in the load file
 # max_jobs refers to total number of jobs in the load
 # max_time_delta_between_lines controls how close/separated successive lines are
+# Sample Usage: python load_generator.py foo.txt 10 5 5 5 100 5
 
 def main(args):
   filename = args[1]
