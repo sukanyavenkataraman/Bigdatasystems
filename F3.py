@@ -330,10 +330,10 @@ class scheduler:
 
     f.close()
 
-sch1 = scheduler('load.txt')
-sch2 = scheduler('load.txt')
-sch3 = scheduler('load.txt')
-sch4 = scheduler('load.txt')
+sch1 = scheduler('foo.txt')
+sch2 = scheduler('foo.txt')
+sch3 = scheduler('foo.txt')
+sch4 = scheduler('foo.txt')
 
 sch1.run(algo_id=0)
 sch1.printJCT()
