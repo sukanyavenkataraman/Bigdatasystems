@@ -278,6 +278,8 @@ class scheduler:
     print 'Average job completion time : ', 1.0*avg/len(self.all_jobs)
     print 'Overall completion time : ', oct
 
+    self.oct = oct
+
   def printCE(self):
     usage = []
     for i in range(len(self.containers_at_time)):
@@ -285,7 +287,7 @@ class scheduler:
 
     plt.plot(usage)
     plt.ylabel('Cluster usage percentage')
-    plt.axis([0, 100, 0, 110])
+    plt.axis([0, self.oct + 10, 0, 110])
     plt.show()
 
   def run(self, algo_id=0):
@@ -328,10 +330,10 @@ class scheduler:
 
     f.close()
 
-sch1 = scheduler('test.txt')
-sch2 = scheduler('test.txt')
-sch3 = scheduler('test.txt')
-sch4 = scheduler('test.txt')
+sch1 = scheduler('load.txt')
+sch2 = scheduler('load.txt')
+sch3 = scheduler('load.txt')
+sch4 = scheduler('load.txt')
 
 sch1.run(algo_id=0)
 sch1.printJCT()
