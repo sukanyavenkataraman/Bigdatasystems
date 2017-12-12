@@ -27,6 +27,14 @@ class job:
       CONTAINER_SIZE / self.container_per_partition)
     self.job_container_quota = float(job_variables[3])
     self.estimated_time_per_partition = int(job_variables[4])
+    self.vertex_id = job_variables[5]
+    self.dependent_vertices = []
+    dependencies = job_variables[6].split(':')
+
+    if dependencies[0] != 'None':
+        for i in dependencies:
+            self.dependent_vertices.append(i)
+
     self.job_weight = 0
     self.parallelism_at_time = []
     self.containers_allotted = 0
@@ -59,6 +67,7 @@ class scheduler:
     self.decisions = []
     self.next_time = 0
     self.all_jobs = {}
+    self.vertex_completion_time = {}
 
   def schedule_decision(self,
       algo=0,
@@ -76,45 +85,67 @@ class scheduler:
     # if algo == 0:
     sorted_queue = sorted(self.ready_queue, key=lambda
         x: x.estimated_time_per_partition * x.total_partitions)
-
+    #print len(self.ready_queue)
     ready_queue_new = []
     index = 0
     min_next_time = sys.maxint
     # print 'before ', time, ' containers available ', self.containers_at_time[time]
 
-    # for job in self.ready_queue:
-    # print job.jobID, job.total_partitions
+    #for job in self.ready_queue:
+     #   print job.jobID, job.total_partitions
 
     while index < len(sorted_queue):
-      while sorted_queue[index].total_partitions > 0 and \
-              self.containers_at_time[time] > 0:
+       # print index, len(sorted_queue), self.containers_at_time[time]
+        schedule = True
+        for i in sorted_queue[index].dependent_vertices:
+            if i in self.ready_queue:
+                schedule = False
+                break
+            else:
+                if time < self.vertex_completion_time[(sorted_queue[index].jobID, i)]:
+                    schedule = False
+                    break
 
-        sorted_queue[index].total_partitions -= sorted_queue[
-          index].partitions_per_container
-        sorted_queue[index].containers_allotted += 1
-        self.all_jobs[sorted_queue[index].jobID].containers_allotted += 1
-        self.all_jobs[sorted_queue[index].jobID].end_time = time + sorted_queue[
-          index].estimated_time_per_partition
+        if schedule == False:
+            min_next_time = self.next_time+1#self.vertex_completion_time[(sorted_queue[index].jobID, i)]
+            ready_queue_new.append(sorted_queue[index])
+            index += 1
+            continue
 
-        self.containers_at_time[time] -= 1
+        while sorted_queue[index].total_partitions > 0 and \
+                  self.containers_at_time[time] > 0:
 
-        if time + sorted_queue[
-          index].estimated_time_per_partition < min_next_time:
-          min_next_time = time + sorted_queue[
-            index].estimated_time_per_partition
+            # If dependent vertices are present in the ready queue, skip
+            #print index, len(sorted_queue), sorted_queue[index].jobID, sorted_queue[index].dependent_vertices
 
-        for i in range(time + 1,
-                       time + sorted_queue[index].estimated_time_per_partition):
-          #print i, self.containers_at_time[i]
-          self.containers_at_time[i] -= 1
-          if self.containers_at_time[i] < 0:
-            print 'ERROR: resource', self.containers_at_time[
-              i], ' at time', i, 'below 0'
+            sorted_queue[index].total_partitions -= sorted_queue[
+              index].partitions_per_container
+            sorted_queue[index].containers_allotted += 1
+            self.all_jobs[sorted_queue[index].jobID].containers_allotted += 1
+            self.all_jobs[sorted_queue[index].jobID].end_time = time + sorted_queue[
+              index].estimated_time_per_partition
 
-      if sorted_queue[index].total_partitions > 0:
-        ready_queue_new.append(sorted_queue[index])
+            self.containers_at_time[time] -= 1
 
-      index += 1
+            if time + sorted_queue[
+              index].estimated_time_per_partition < min_next_time:
+              min_next_time = time + sorted_queue[
+                index].estimated_time_per_partition
+
+            for i in range(time + 1,
+                           time + sorted_queue[index].estimated_time_per_partition):
+              #print i, self.containers_at_time[i]
+              self.containers_at_time[i] -= 1
+              if self.containers_at_time[i] < 0:
+                print 'ERROR: resource', self.containers_at_time[
+                  i], ' at time', i, 'below 0'
+
+        if sorted_queue[index].total_partitions > 0:
+          ready_queue_new.append(sorted_queue[index])
+
+        else:
+          self.vertex_completion_time[(sorted_queue[index].jobID, sorted_queue[index].vertex_id)] = time + sorted_queue[index].estimated_time_per_partition
+        index += 1
 
     self.ready_queue = ready_queue_new
     # print 'after ', time, ' containers available ', self.containers_at_time[time]
@@ -128,24 +159,46 @@ class scheduler:
 
     return flag or False
 
-  def normalize_allocation(self):
+  def normalize_allocation(self, time):
     sum_all = 0
     for i in self.ready_queue:
+      for k in i.dependent_vertices:
+            if k in self.ready_queue:
+                continue
+            if time < self.vertex_completion_time[(i.jobID, k)]:
+                continue
       sum_all += self.all_jobs[i.jobID].job_quota
 
     for j in self.ready_queue:
+      for k in j.dependent_vertices:
+            if k in self.ready_queue:
+                continue
+            if time < self.vertex_completion_time[(j.jobID, k)]:
+                continue
       j.job_weight = (j.job_container_quota * 1.0 / sum_all)
+      #print j.jobID, j.vertex_id, j.job_weight
 
-  def normalize_allocation_ours(self):
+  def normalize_allocation_ours(self, time):
       sum_all = 0
+
       for i in self.ready_queue:
           job = self.all_jobs[i.jobID]
+          for k in i.dependent_vertices:
+              if k in self.ready_queue:
+                  continue
+              if time < self.vertex_completion_time[(i.jobID, k)]:
+                  continue
           sum_all += i.job_container_quota + 1.0*job.containers_allotted/job.containers_required
 
       for j in self.ready_queue:
-          job = self.all_jobs[i.jobID]
+          job = self.all_jobs[j.jobID]
+          for k in j.dependent_vertices:
+              if k in self.ready_queue:
+                  continue
+              if time < self.vertex_completion_time[(j.jobID, k)]:
+                  continue
           j.job_weight = ((j.job_container_quota + (1.0*job.containers_allotted/job.containers_required)) / sum_all)
-
+          #print j.jobID, j.vertex_id, j.job_weight
 
   def schedule_weighted_max_min(self,
       time=0,
@@ -153,9 +206,9 @@ class scheduler:
     # Containers allotted
 
     if algo == 2:
-      self.normalize_allocation()
+      self.normalize_allocation(time)
     if algo == 3:
-      self.normalize_allocation_ours()
+      self.normalize_allocation_ours(time)
 
     min_next_time = sys.maxint
     # print 'before ', time, ' containers available ', self.containers_at_time[time]
@@ -173,6 +226,19 @@ class scheduler:
 
       # print ' %r containers available at time %r' %(self.containers_at_time[time], time)
       job = self.ready_queue.pop(0)
+
+      schedule = True
+      for i in job.dependent_vertices:
+          if i in self.ready_queue:
+              schedule = False
+              break
+          if time < self.vertex_completion_time[(job.jobID, i)]:
+              schedule = False
+              break
+
+      if schedule == False:
+          self.ready_queue.append(job)
+          break
 
       allocation = min(
         math.ceil(job.total_partitions / job.partitions_per_container),
@@ -199,7 +265,8 @@ class scheduler:
 
       if job.total_partitions > 0:
         self.ready_queue.append(job)
-
+      else:
+        self.vertex_completion_time[(job.jobID, job.vertex_id)] = time + job.estimated_time_per_partition
       queue_length -= 1
     self.containers_at_time[time] = curr_containers
 
@@ -234,6 +301,20 @@ class scheduler:
 
       job = sorted_queue[0]
 
+      schedule = True
+
+      for i in job.dependent_vertices:
+          if i in self.ready_queue:
+              schedule = False
+              break
+          if time < self.vertex_completion_time[(job.jobID, i)]:
+              schedule = False
+              break
+
+      if schedule == False:
+          self.ready_queue.append(job)
+          break
+
       if job.total_partitions == 0:
         # print "No more partitions left to schedule for job %s" % job.jobID
         self.ready_queue.pop(0)
@@ -263,6 +344,8 @@ class scheduler:
 
       if job.total_partitions > 0:
         self.ready_queue.append(job)
+      else:
+        self.vertex_completion_time[(job.jobID, job.vertex_id)] = time + job.estimated_time_per_partition
 
       self.ready_queue.pop(0)
 
@@ -292,15 +375,18 @@ class scheduler:
 
     self.oct = oct
 
-  def printCE(self):
+  def printCE(self,num='0'):
     usage = []
+    f = open('plots'+num+'.txt', 'w')
     for i in range(len(self.containers_at_time)):
       usage.append(
         100.0 * (MAX_CONTAINERS - self.containers_at_time[i]) / MAX_CONTAINERS)
+      f.write(str(usage[i])+'\n')
 
+    f.close()
     plt.plot(usage)
     plt.ylabel('Cluster usage percentage')
-    plt.axis([0, 50, 0, 110])
+    plt.axis([0, 100, 0, 110])
     plt.show()
 
   def run(self, algo_id=0):
@@ -335,6 +421,8 @@ class scheduler:
             self.all_jobs[eachjob_parts[0]].containers_required += math.ceil(
               float(eachjob_parts[1]) * float(eachjob_parts[2]))
 
+          self.vertex_completion_time[(eachjob_parts[0], eachjob_parts[5])] = -1
+
           self.ready_queue.append(job(eachjob, time))
 
         #if self.next_time == time:
@@ -344,6 +432,7 @@ class scheduler:
         print 'Done scheduling. Total run time is'
       else:
         while self.ready_queue != []:
+          #print self.next_time
           self.schedule_decision(algo_id, self.next_time)
 
           # print 'Out of potential infinite loop 2'
@@ -357,17 +446,17 @@ sch4 = scheduler('test_dag.txt')
 
 sch1.run(algo_id=0)
 sch1.printJCT()
-sch1.printCE()
+sch1.printCE('0')
 print "==================="
 sch2.run(algo_id=1)
 sch2.printJCT()
-sch2.printCE()
+sch2.printCE('1')
 print "==================="
 sch3.run(algo_id=2)
 sch3.printJCT()
-sch3.printCE()
+sch3.printCE('2')
 print "==================="
 sch4.run(algo_id=3)
 sch4.printJCT()
-sch4.printCE()
+sch4.printCE('3')
 print "==================="
