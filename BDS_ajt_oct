@@ -1,0 +1,93 @@
+DAG_1 Single Job
+ Job  A  completed in  13  seconds.
+Average job completion time :  13.0
+Overall completion time :  13
+===================
+ Job  A  completed in  13  seconds.
+Average job completion time :  13.0
+Overall completion time :  13
+===================
+ Job  A  completed in  12  seconds.
+Average job completion time :  12.0
+Overall completion time :  12
+===================
+ Job  A  completed in  12  seconds.
+Average job completion time :  12.0
+Overall completion time :  12
+===================
+DAG_1 Two Jobs
+ Job  A  completed in  17  seconds.
+ Job  B  completed in  22  seconds.
+Average job completion time :  19.5
+Overall completion time :  22
+===================
+ Job  A  completed in  14  seconds.
+ Job  B  completed in  21  seconds.
+Average job completion time :  17.5
+Overall completion time :  21
+===================
+ Job  A  completed in  21  seconds.
+ Job  B  completed in  26  seconds.
+Average job completion time :  23.5
+Overall completion time :  26
+===================
+ Job  A  completed in  15  seconds.
+ Job  B  completed in  23  seconds.
+Average job completion time :  19.0
+Overall completion time :  23
+===================
+DAG_2 Single Job
+ Job  A  completed in  17  seconds.
+Average job completion time :  17.0
+Overall completion time :  17
+===================
+ Job  A  completed in  17  seconds.
+Average job completion time :  17.0
+Overall completion time :  17
+===================
+ Job  A  completed in  14  seconds.
+Average job completion time :  14.0
+Overall completion time :  14
+===================
+ Job  A  completed in  14  seconds.
+Average job completion time :  14.0
+Overall completion time :  14
+===================
+DAG_2 Two Jobs
+ Job  A  completed in  24  seconds.
+ Job  B  completed in  64  seconds.
+Average job completion time :  44.0
+Overall completion time :  64
+===================
+ Job  A  completed in  12  seconds.
+ Job  B  completed in  54  seconds.
+Average job completion time :  33.0
+Overall completion time :  54
+===================
+ Job  A  completed in  34  seconds.
+ Job  B  completed in  55  seconds.
+Average job completion time :  44.5
+Overall completion time :  55
+===================
+ Job  A  completed in  34  seconds.
+ Job  B  completed in  55  seconds.
+Average job completion time :  44.5
+Overall completion time :  55
+===================
+DAG_3 Single Job
+ Job  A  completed in  32  seconds.
+Average job completion time :  32.0
+Overall completion time :  32
+===================
+ Job  A  completed in  35  seconds.
+Average job completion time :  35.0
+Overall completion time :  35
+===================
+ Job  A  completed in  34  seconds.
+Average job completion time :  34.0
+Overall completion time :  34
+===================
+ Job  A  completed in  34  seconds.
+Average job completion time :  34.0
+Overall completion time :  34
+===================
